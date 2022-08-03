@@ -797,8 +797,13 @@ function load_input_data!(ES)
     min_load_ts_dict = 
         calculate_chp_min_load(copy(ES.countries), 2015, path, ES.T; offset=0.2)
     ########## Wind forecast data ########## 
-    WindForecast_ts = CSV.read(joinpath(
-        path, "scenarios_forecasterror-v04-yw-2022_05_10_flt.csv"), DataFrame, delim=";")
+    WindForecast_ts = vcat(
+        CSV.read(joinpath(
+            path, "scenarios_forecasterror-v04-yw-2022_05_10_flt_1.csv"), DataFrame, delim=";"),
+        CSV.read(joinpath(
+            path, "scenarios_forecasterror-v04-yw-2022_05_10_flt_2.csv"), DataFrame, delim=";")
+    )
+
     dateformat = Dates.DateFormat("yyyy-mm-ddTHH:MM:SSZ")
     WindForecast_ts[!,:time] = Dates.DateTime.(WindForecast_ts[!,:time], dateformat)
     WindForecast_ts[!,:y] = Dates.year.(WindForecast_ts[!,:time])
