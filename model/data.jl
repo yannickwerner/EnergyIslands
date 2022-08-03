@@ -1073,9 +1073,9 @@ function load_input_data!(ES)
         # Parameters
         id = Electrolysers_df[row, :n] * "_" * Electrolysers_df[row, :g] 
         country, tech, l_max = Electrolysers_df[row, [:n, :g, :g_max]]
-        eta, output_fuel, cost_vom = 
+        eta, f_min, output_fuel, cost_vom = 
             DataFrameRow(Parameters_e[Parameters_e[!,:e] .== tech,
-                [:eta, :fuel_output, :vom]], 1)
+                [:eta, :l_min_share, :fuel_output, :vom]], 1)
 
         # Costs and prices
         price_H2 = FuelPrice_df[
@@ -1087,7 +1087,7 @@ function load_input_data!(ES)
 
         # Create components
         Electrolysers[id] = Electrolyser(
-            id, country, tech, l_max,
+            id, country, tech, l_max, f_min,
             p_B_up, p_B_down, mc,
             price_H2, eta,
             nothing, nothing, Dict(), nothing

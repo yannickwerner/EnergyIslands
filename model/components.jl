@@ -68,6 +68,7 @@ mutable struct Electrolyser
     node # bidding zone
     tech # electrolyser technology (onshore/offshore)
     l_max # maximum capacity (power)
+    f_min # minimal capacity share (power, default 0)
     p_B_up # bidding price (system) upward regulation
     p_B_down # bidding price (system) downward regulation
     mc # marginal cost of production
