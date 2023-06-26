@@ -112,7 +112,7 @@ function run_opt_model!(ES; print_model=false)
             for ω in Ω))
             for t in T))
     else
-        throw(ArgumentError("Hydrogen production drive is set
+        throw(ArgumentError("Hydrogen production driver is set
             to $(ES.hydrogen_production_driver), but must be either
             'price' or 'demand'."))
     end
@@ -297,5 +297,7 @@ function run_opt_model!(ES; print_model=false)
             1/length(Ω)*sum(ES.B_down[e][ω].-ES.B_up[e][ω] for ω in ES.Ω))
             for e in ES.E)
     end
+
+    ES.model = m
 
 end

@@ -47,7 +47,7 @@ config_dict = Dict(
          "NOM1", "NON1", "NOS0", "UK00", "SE01", "SE02",
          "SE03", "SE04", "PL00", "EE00", "LT00", "LV00"],
     :μ => 0.2,
-    :seed => seed!(03042022),
+    # :seed => seed!(03042022),
     :hydrogen_autarky_rate => 0.6,
     :quantile_ramping => 0.999,
     :wind_uncertainty_scaling_factor => 1.5,
@@ -59,6 +59,18 @@ config_dict = Dict(
     # :bidding_zone_config => "OBZ" # One of "OBZ", "HBZ"
 )
 
+#=
+Each scenario is a tuple with five entries containing information on:
+- Bidding zone configuration: ["OBZ", "HBZ"]
+- Model year: [2030, 2040]
+- Data set of capacities: ["TYNDP", "openENTRANCE"]
+- CO2 price pathway: ["TYNDP", "BAU", "Ambitious", "Paris"]
+- H2 price pathway: ["base", "low", "high"]
+- NTC scaling factor (1.0 default): :Float64
+=# 
+
+
+global SEED = seed!(12345)
 scenarios = [
     ("OBZ", 2030, "TYNDP", "TYNDP", 1.0),
     # ("OBZ", 2030, "openENTRANCE", "Paris", 1.0),
@@ -87,7 +99,7 @@ timestamp = Dates.format(Dates.now(), "yyyy-mm-dd-HH-MM")
 countries_data_extracted =
     ["HUB1", "HUB2", "HUB3", "DKW1", "DKE1", "DELU"]
 scenarios_data_extraction = sample(
-    config_dict[:seed],
+    SEED,
     ["s$i" for i in 1:length(config_dict[:years_scenarios])],
     1,
     replace=false)

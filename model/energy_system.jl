@@ -25,51 +25,55 @@ mutable struct EnergySystem
     total_run_time # measures the total run time of a scenario including model building and solving
     scenario # name of the scenario
 
-    # Dispatchables
-    Conventionals
-    Electrolysers
-    Units
-    Loads
-    Interconnectors
-    Renewables
-    Demands
-    Storages
-    Reservoirs
-    I
-    D
-    R
-    T
-    Li
-    # G
-    # D
-    U
-    J
-    Ω
-    E
-    N
-    # F
-    SS
+    ##### Component data #####
+    Conventionals # Conventional generator data
+    Electrolysers # Electrolyzer data
+    Units # Union of conventionals and electrolyzers
+    Renewables # Renewable generator data
+    Loads # Load data
+    Interconnectors # Interconnector data
+    #Demands
+    Reservoirs # Hydro reservoir data
+    Storages # Storage data
 
-    ##### Solutions optimization model
-    model_statistics
-    G
-    G_spill
-    L
-    L_shed
-    F
-    F_adj
-    B_up
-    B_down
-    B_down_L
-    B_up_L
-    B_up_G
-    B_down_G
-    S
-    S_RT
-    excess
-    shortage
-    λ_DA
-    λ_RT
+    ##### Sets #####
+    I # Set of conventionals
+    E # Set of electrolyzers
+    U # Super-set of conventionals and reservoirs
+    J # Set of renewables
+    D # Set of loads
+    Li # Set of interconnectors
+    R # Set of reservoirs
+    SS # Set of storages
+
+    ## G
+    ## D
+    ## F
+
+    T # Set of time steps
+    Ω # Set of scenarios
+    N # Set of nodes
+
+    ##### Solutions optimization model #####
+    model_statistics # Solution and model statistics
+    G # Day-ahead schedules of dispatchable generators (I,E,J,R,SS) 
+    G_spill # Real-time spillage of renewables (R) 
+    L # Day-ahead schedule of dispatchable loads (D, SS)
+    L_shed # Real-time load shedding (D)
+    F # Day-ahead interconnector flows (Li)
+    F_adj # Real-time adjustment of interconnector flows (Li)
+    B_up # Real-time upward balancing of dispatchable generators (I,E,R)
+    B_down # Real-time downwrad balancing of dispatchable generators (I,E,R)
+    B_down_L # Real-time downward balancing of storages (SS)
+    B_up_L # Real-time upward balancing of storages (SS)
+    B_up_G # Real-time upward balancing of storages (SS)
+    B_down_G # Real-time downward balancing of storages (SS)
+    S # Day-ahead energy storage level (SS)
+    S_RT # Real-time energy storage level (SS)
+    excess # Real-time excess sink to ensure feasibility
+    shortage # Real-time shortage source to ensure feasibility
+    λ_DA # Day-ahead nodal prices
+    λ_RT # Real-time nodal prices
     ρ_H2 # endogenous hydrogen price
     γ_H2 # endogenous hydrogen demand
 
