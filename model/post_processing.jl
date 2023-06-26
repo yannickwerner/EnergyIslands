@@ -303,12 +303,34 @@ function extract_optimal_values(scenarios, countries, ES)
     df[!, "stor_double_bal_activations"] = activations
     df[!, "stor_double_bal_magnitude"] = magnitude
 
+    ##### Calculate hourly system costs #####
+    df[!, "expected_hourly_system_costs"] = calculate_hourly_expected_system_costs(ES)
+
     df = round.(df, digits=2)
     df = Float32.(df)
 
     return df
 
 end
+
+
+function calculate_hourly_expected_system_costs(ES)
+    if ES.hydrogen_production_driver == "price"
+        return [
+            sum(ES.Conventionals[i].mc*ES.G[i][t] for i in ES.I) +
+            sum((-ES.Electrolysers[e].p_H2*ES.Electrolysers[e].η+ES.Electrolysers[e].mc)*ES.L[e][t] for e in ES.E) +
+            sum(1/length(ES.Ω)*(sum(
+                sum(ES.Conventionals[i].p_B_up*ES.B_up[i][ω][t] - 
+                    ES.Conventionals[i].p_B_down*ES.B_down[i][ω][t] for i in ES.I) +
+                sum((ES.Electrolysers[e].p_H2*ES.Electrolysers[e].η-ES.Electrolysers[e].p_B_up)*ES.B_up[e][ω][t] +
+                    (-ES.Electrolysers[e].p_H2*ES.Electrolysers[e].η+ES.Electrolysers[e].p_B_down)*ES.B_down[e][ω][t] for e in ES.E) +
+                sum(ES.Loads[l].voll*ES.L_shed[l][ω][t] for l in ES.D) 
+                for ω in ES.Ω)))
+            for t in ES.T]
+    elseif ES.hydrogen_production_driver == "demand"
+        return nothing
+    end
+end 
 
 
 function calculate_objective_value_scenario(ES)
@@ -467,7 +489,10 @@ function write_descriptive_statistics(ES::EnergySystem, weeks)
         node_df = reduce(vcat, [node_df, df])
     end
 
+    scenario_costs = calculate_objective_value_scenario(ES)
+
     model_statistics_df = DataFrame(ES.model_statistics)
+    model_statistics_df[!, :total_system_cost] = [sum(values(scenario_costs))]
     model_statistics_df[!, :total_run_time] = [ES.total_run_time]
     model_statistics_df[!, :weeks] = [string(weeks)]
     model_statistics_df[!, :hour_start] = [hour_start]
@@ -487,9 +512,11 @@ function write_descriptive_statistics(ES::EnergySystem, weeks)
         :no_scenarios => length(ES.Ω))
     objective_value_df = hcat(
         objective_value_df,
-        DataFrame(calculate_objective_value_scenario(ES))
+        DataFrame(scenario_costs)
     )
 
     return electrolyser_df, renewables_df, node_df, model_statistics_df, objective_value_df
 
 end
+
+
