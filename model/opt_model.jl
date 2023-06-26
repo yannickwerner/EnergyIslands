@@ -45,6 +45,12 @@ function run_opt_model!(ES; print_model=false)
 
     T_red = T[2:end]
 
+    T_sub_length = 365
+    T_sub_no = Int(ceil(length(T)/T_sub_length))
+    T_sub = Dict(h => (h-1)*T_sub_length+1:h*T_sub_length
+        for h in 1:T_sub_no)
+    T_sub[T_sub_no] = (T_sub_no-1)*T_sub_length+1:T[end]
+
     B = vcat(ES.I, ES.R, ES.SS, ES.J)
     P = vcat(ES.I, ES.R, ES.E)
     A = vcat(ES.E, ES.SS)
@@ -150,8 +156,8 @@ function run_opt_model!(ES; print_model=false)
         GenerationLimitDownDispatchables[u in U, t in T, ω in Ω],
             G[u,t] - B_down[u,t,ω] >= Units[u].g_min[t]
         # Reservoir
-        ReservoirTotalGenerationLimit[r in R, ω in Ω],
-            sum(G[r,t]+B_up[r,t,ω]-B_down[r,t,ω] for t in T) <= Reservoirs[r].g_tot[ω]
+        ReservoirTotalGenerationLimit[r in R, ω in Ω, t_sub in 1:T_sub_no],
+            sum(G[r,t]+B_up[r,t,ω]-B_down[r,t,ω] for t in T_sub[t_sub]) <= sum(Reservoirs[r].g_tot[ω][T_sub[t_sub]])
 
         # Ramping constraints
         RampingLimitUpDispatchablesDA[u in U, t in T_red],

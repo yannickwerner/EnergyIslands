@@ -71,6 +71,7 @@ Each scenario is a tuple with five entries containing information on:
 
 
 global SEED = seed!(12345)
+global YEARS_SCENARIO_HYDRO = sample_hydro_years(config_dict[:years_scenarios])
 scenarios = [
     ("OBZ", 2030, "TYNDP", "TYNDP", "base", 1.0),
     # ("OBZ", 2040, "TYNDP", "TYNDP", "base", 1.0),

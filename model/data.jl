@@ -271,7 +271,8 @@ function calculate_generation_limit(ES, df, country)
     for i in 1:length(years_scenario)
         flt = [((t in ES.T) && (y == years_scenario[i])) ?
             true : false for (t,y) in eachrow(df[!, [:t, :y]])]
-        scenario_output["s" * string(i)] = sum(df[flt, country])
+        # scenario_output["s" * string(i)] = sum(df[flt, country])
+        scenario_output["s" * string(i)] = df[flt, country]
     end
             
     return scenario_output
@@ -279,6 +280,52 @@ end
 
 
 ########## Caculate sample years for hydro ##########
+function sample_hydro_years(years_scenarios)
+    """
+    Calculate probabilistic forecast for run-of-river technology
+    and samples years for the probabilistic modeling of available
+    hydro reservoir power production based on historical data.
+    Ensures that hydro reservoir and run-of-river timeseries are consistent.
+
+    Parameters
+    ----------
+    years_scenarios : UnitRange{Int64}
+        Contains list of all years to consider for scenario generation.
+
+    Returns
+    -------
+    years_scenario_hydro : Vector{Int64}
+        Contains a list of randomly sampled scenario years for hydro reservoir modeling.
+    """
+    ### Available years in data ###
+    available_years = collect(2015:2019)
+    ### Scenario years ###
+    # Determine sample years for hydro based on available data
+    if isnothing(years_scenarios)
+        years_scenario_hydro = sample(SEED, available_years, 2014-1979)
+        # Assure that the last 5 years coincide with the real ones
+        append!(years_scenario_hydro, available_years)
+    else
+        # Replace years that are not available in the data
+        # with randomly sampled years.
+        scenario_list_years = years_scenarios
+        unavailable_years = [~(y in available_years) ? true : false
+            for y in scenario_list_years]
+        sample_years = sample(SEED, available_years, sum(unavailable_years))
+        years_scenario_hydro = scenario_list_years .* (.~unavailable_years)
+
+        # overwrite given years without timeseries data
+        j = 1
+        for i in 1:length(years_scenario_hydro)
+            if years_scenario_hydro[i] == 0
+                years_scenario_hydro[i] = sample_years[j]
+                j += 1
+            end
+        end
+    end
+    return years_scenario_hydro
+end
+
 # If the year selected for
 # the point forecast is not available, i.e. in 2015--2019, then
 # the year is randomly drawn from the available ones.
@@ -308,35 +355,9 @@ function select_hydro_sample_years(RunOfRiver_ts, ES)
         Contains the randomly sampled years for the probabilistic
         forecast of hydro power production
     """
-    ### Available years in data ###
-    available_years = collect(2015:2019)
-    ### Scenario years ###
-    # Determine sample years for hydro based on available data
-    if isnothing(ES.years_scenarios)
-        years_scenario_hydro = sample(ES.seed, available_years, 2014-1979)
-        # Assure that the last 5 years coincide with the real ones
-        append!(years_scenario_hydro, available_years)
-    else
-        # Replace years that are not available in the data
-        # with randomly sampled years.
-        scenario_list_years = ES.years_scenarios
-        unavailable_years = [~(y in available_years) ? true : false
-            for y in scenario_list_years]
-        sample_years = sample(ES.seed, available_years, sum(unavailable_years))
-        years_scenario_hydro = scenario_list_years .* (.~unavailable_years)
-
-        # overwrite given years without timeseries data
-        j = 1
-        for i in 1:length(years_scenario_hydro)
-            if years_scenario_hydro[i] == 0
-                years_scenario_hydro[i] = sample_years[j]
-                j += 1
-            end
-        end
-    end
 
     # Years to exchange scenario data
-    year_counter = counter(years_scenario_hydro)
+    year_counter = counter(YEARS_SCENARIO_HYDRO)
     unique_sample_years_sorted = sort(collect(keys(year_counter)))
     hydro_sample_years_distribution = 1/sum(values(year_counter)) .* [
         year_counter[y] for y in unique_sample_years_sorted
@@ -351,7 +372,7 @@ function select_hydro_sample_years(RunOfRiver_ts, ES)
     RunOfRiver_ts = innerjoin(RunOfRiver_ts, weight_df, on=:y)
 
     hydro_sample_years = Dict{Any,Any}(
-        "years_scenarios" => years_scenario_hydro,
+        "years_scenarios" => YEARS_SCENARIO_HYDRO,
         "years_unique" => unique_sample_years_sorted
     )
 
