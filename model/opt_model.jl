@@ -85,7 +85,6 @@ function run_opt_model!(ES; print_model=false)
         @objective(m, Min,
             sum(
                 sum(Conventionals[i].mc*G[i,t] for i in I) +
-                sum(G[s,t]*0.001 for s in SS) +
                 sum(F[l,t]*0.001 for l in Li) +
                 sum((-Electrolysers[e].p_H2*Electrolysers[e].η+Electrolysers[e].mc)*L[e,t] for e in E)
                 for t in T) +
@@ -94,7 +93,6 @@ function run_opt_model!(ES; print_model=false)
                     Conventionals[i].p_B_down*B_down[i,t,ω] for i in I) +
                 sum((Electrolysers[e].p_H2*Electrolysers[e].η-Electrolysers[e].p_B_up)*B_up[e,t,ω] +
                     (-Electrolysers[e].p_H2*Electrolysers[e].η+Electrolysers[e].p_B_down)*B_down[e,t,ω] for e in E) +
-                sum(B_up_L[s,t,ω]*0.001 + B_up_G[s,t,ω]*0.001 for s in SS) +
                 sum(F_adj[l,t,ω]*0.001 for l in Li) +
                 sum(Loads[l].voll*L_shed[l,t,ω] for l in D) 
                 for ω in Ω))
@@ -103,7 +101,6 @@ function run_opt_model!(ES; print_model=false)
         @objective(m, Min,
         sum(
             sum(Conventionals[i].mc*G[i,t] for i in I) +
-            sum(G[s,t]*0.001 for s in SS) +
             sum(F[l,t]*0.001 for l in Li) +
             sum(Electrolysers[e].mc*L[e,t] for e in E)
             for t in T) +
@@ -112,7 +109,6 @@ function run_opt_model!(ES; print_model=false)
                 Conventionals[i].p_B_down*B_down[i,t,ω] for i in I) +
             sum(-Electrolysers[e].p_B_up*B_up[e,t,ω] +
                 Electrolysers[e].p_B_down*B_down[e,t,ω] for e in E) +
-            sum(B_up_L[s,t,ω]*0.001 + B_up_G[s,t,ω]*0.001 for s in SS) +
             sum(F_adj[l,t,ω]*0.001 for l in Li) +
             sum(Loads[l].voll*L_shed[l,t,ω] for l in D) 
             for ω in Ω))
