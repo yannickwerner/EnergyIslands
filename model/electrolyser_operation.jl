@@ -12,36 +12,30 @@ using Statistics: quantile
 using Dates
 using DataStructures: counter
 using Impute: interp
-using Plots, VegaLite, FileIO
 
 include("components.jl")
 include("data.jl")
 include("energy_system.jl")
 include("opt_model.jl")
 include("post_processing.jl")
-include("plotting.jl")
-
-# Implement week/hours information/time windows properly
 
 # week_list = [1:8760]
+h = 1460
+week_list = [
+    1:h,
+    h+1:h*2,
+    h*2+1:h*3,
+    h*3+1:h*4,
+    h*4+1:h*5,
+    h*5+1:h*6
+]
 
-week_list = [1:10]
-
-# h = 1460
-# week_list = [
-#     1:h,
-#     h+1:h*2,
-#     h*2+1:h*3,
-#     h*3+1:h*4,
-#     h*4+1:h*5,
-#     h*5+1:h*6
-# ]
 
 config_dict = Dict(
     :case_study => "29032022",
     :year_pointforecast => 2018, # one in 2015:2019
-    :years_scenarios => 2015:2019, #2016:2019
-    :countries =>
+    :years_scenarios => 2005:2019, #2016:2019
+    :countries => #["DELU"],
         ["IE00", "DKE1", "DKW1", "DELU", "DKKF", "DEKF",
          "BE00", "FR00", "NL00", "HUB1", "HUB2", "HUB3",
          "NOM1", "NON1", "NOS0", "UK00", "SE01", "SE02",
@@ -52,11 +46,6 @@ config_dict = Dict(
     :quantile_ramping => 0.999,
     :wind_uncertainty_scaling_factor => 1.5,
     :hydrogen_production_driver => "price", # One of "price" or "demand
-    # :co2_price_pathway => "Ambitious", # One of "TYNDP", "BAU", "Ambitious", "Paris"
-    # :data_set_capacities => "TYNDP", # One of ["TYNDP", "openENTRANCE"]
-    # :ntc_scaling_factor => 1.0, 
-    # :uncertainty_horizon => "long-termfuture" # "near-termfuture", "long-termfuture"
-    # :bidding_zone_config => "OBZ" # One of "OBZ", "HBZ"
 )
 
 #=
