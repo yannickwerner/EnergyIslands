@@ -198,6 +198,67 @@ end
 # end
 
 
+function define_filters(df)
+    """
+    Predefines filters for the analaysis of capacity factors
+    in different cases.
+    """
+    flt_bz =
+        occursin.("TYNDP", df[!, "scenario"]) .&
+        occursin.("base", df[!, "scenario"]) .&
+        occursin.("2030", df[!, "scenario"]) .&
+        (df[!, "ntc_scaling_factor"] .== 1.0)
+
+    flt_year = 
+        occursin.("TYNDP", df[!, "scenario"]) .&
+        occursin.("base", df[!, "scenario"]) .&
+        occursin.("OBZ", df[!, "scenario"]) .&
+        (df[!, "ntc_scaling_factor"] .== 1.0)
+
+    flt_data = 
+        occursin.("OBZ", df[!, "scenario"]) .&
+        occursin.("base", df[!, "scenario"]) .&
+        occursin.("2030", df[!, "scenario"]) .&
+        (df[!, "ntc_scaling_factor"] .== 1.0)
+
+    flt_h2price = 
+        occursin.("OBZ", df[!, "scenario"]) .&
+        occursin.("TYNDP", df[!, "scenario"]) .&
+        occursin.("2030", df[!, "scenario"]) .&
+        (df[!, "ntc_scaling_factor"] .== 1.0)
+
+    flt_ntc = 
+        occursin.("OBZ", df[!, "scenario"]) .&
+        occursin.("base", df[!, "scenario"]) .&
+        occursin.("2030", df[!, "scenario"]) .&
+        occursin.("TYNDP", df[!, "scenario"])
+
+    configurations = [
+        Dict(
+            "case" => "BZ_comparison",
+            "flt" => flt_bz,
+            "fname" => "BZ_comparison_2030"),
+        Dict(
+            "case" => "year_comparison",
+            "flt" => flt_year,
+            "fname" => "2030_2040_comparison"),
+        Dict(
+            "case" => "dataset_comparison",
+            "flt" => flt_data,
+            "fname" => "TYNDP_oE_comparison"),
+        Dict(
+            "case" => "h2price_comparison",
+            "flt" => flt_h2price,
+            "fname" => "h2price_comparison"),
+        Dict(
+            "case" => "ntc_comparison",
+            "flt" => flt_ntc,
+            "fname" => "ntc_comparison")
+    ]
+
+    return configurations
+end
+
 
 function plot_capacity_factors_grouped_from_dataframe(
     df,
@@ -208,17 +269,28 @@ function plot_capacity_factors_grouped_from_dataframe(
     market = []
     group = []
     market_dict = Dict(
-        "DA" => "Day-ahead dispatch electrolyser",
-        "BA_up" => "Real-time downward adjustment electrolyser",
-        "BA_down" => "Real-time upward adjustment electrolyser",
+        "DA" => "Day-ahead dispatch",
+        "BA_up" => "Upward balancing service",
+        "BA_down" => "Downward balancing service",
     )
 
     legend_orientation = "horizontal"
+    sort_scheme_bars = "null"
+    if case == "h2price_comparison"
+        sort_scheme_bars = ["low", "base", "high"]
+    elseif case == "ntc_comparison"
+        sort_scheme_bars = ["0.6", "0.8", "1.0", "1.2"]
+    end
 
     bz_list = [
-        "DKW1", "DKE1", "VindØ", "Bornholm", "NSWHP"]
+        "DKW1", "DKE1", "DEI", "Bornholm", "NSWHP"]
+    bz_hubs = ["DEI", "Bornholm", "NSWHP"]
     if case in ["BZ_comparison", "ntc_comparison"]
         flt = [n in bz_list for n in df[!,:n]]
+        df = df[flt, :]
+        legend_orientation = "vertical"
+    elseif case in ["h2price_comparison"]
+        flt = [n in bz_hubs for n in df[!,:n]]
         df = df[flt, :]
         legend_orientation = "vertical"
     end
@@ -231,8 +303,10 @@ function plot_capacity_factors_grouped_from_dataframe(
             group_name = rsplit.(sc, "_")[2]
         elseif case == "dataset_comparison"
             group_name = rsplit.(sc, "_")[3]
-        elseif case == "ntc_comparison"
+        elseif case == "h2price_comparison"
             group_name = rsplit.(sc, "_")[5]
+        elseif case == "ntc_comparison"
+            group_name = rsplit.(sc, "_")[6]
         end
 
         countries = df[df[!, :scenario] .== sc, :n]
@@ -263,7 +337,8 @@ function plot_capacity_factors_grouped_from_dataframe(
                 title="",
                 labelFontSize=fz,
                 titleFontSize=fz
-            }
+            },
+            sort=sort_scheme_bars
         },
         y={
             :"val",
@@ -271,11 +346,13 @@ function plot_capacity_factors_grouped_from_dataframe(
                 title="Capacity factor",
                 type="quantitative",
                 labelFontSize=fz,
-                titleFontSize=fz,
-            }
+                titleFontSize=fz
+            },
         },
         color={
             :"market",
+            scale={
+                range=["#56b4e9", "#cc79a7", "#F0E442"]},
             axis={
                 title="",              
                 },
@@ -414,14 +491,14 @@ function plot_price_during_congestion_from_dataframe(
     i, year, result_dict, ntc_dict; T=nothing)
 
     hub_rename_dict = Dict(
-        "HUB1" => "VindØ",
+        "HUB1" => "DEI",
         "HUB2" => "NSWHP",
         "HUB3" => "Bornholm"
     )
 
     fz=14
     f = plot(    
-        legend=:bottomright,
+        legend=:bottomleft,
         xlabel="Timestep",
         ylabel="Day-ahead price in €/MWh",
         xtickfontsize=fz,
@@ -842,16 +919,25 @@ function plot_system_balance_from_dataframe(ω, T, df)
 
     fz = 14
 
+    orange = colorant"rgba(230,159,0,1)"
+    skyblue = colorant"rgba(86,180,233,1)"
+    yellow = colorant"rgba(240,228,66,1)"
+    blue = colorant"rgba(0,114,178,1)"
+    vermillon = colorant"rgba(213,94,0,1)"
+    reddish = colorant"rgba(204,121,167,1)"
+
+
     f = groupedbar(
         balance_values[T,:],
         bar_position=:stack,
         bar_width=1,
+        color=[orange vermillon yellow blue skyblue reddish],
         label=balance_labels,
         ylabel="Value in GW",
         xlabel="Timestep",
-        xlim=[0,72],
+        xlim=[0,72],#[0,72],
         ylim=[-52,45],
-        legend=:bottomleft,
+        legend=:bottomright,
         linecolor=:match,
         size=(1000,500),
         bottom_margin=5mm,
@@ -1106,3 +1192,62 @@ end
 #     savefig(f, path*"real_time_adjustment_$config.png")
 # end
 
+
+function select_weeks(df, weeks)
+    return df[[w in weeks for w in df[!, "weeks"]], :]
+end
+
+function select_mean(df, by, cols)
+    return combine(groupby(df, by),
+        cols .=> mean .=> cols)
+end
+
+function select_mean_weighted(df, by, cols, weights)
+    return combine(groupby(df, by),
+        cols .=> (c,w) -> mean(c,Weights(w)) .=> cols)
+end
+
+function load_electrolyser_results_df(
+    model_results,
+    hub_rename_dict)
+    electrolyser_df = DataFrame(gettable(
+        model_results["electrolysers"],
+        infer_eltypes=true))
+    for var in ["DA", "BA_down", "BA_up"]
+        electrolyser_df[!, var] = Float64.(
+            electrolyser_df[!, var])
+    end
+
+    for (key,val) in hub_rename_dict
+        electrolyser_df[!,:n] = 
+            ifelse.(
+                electrolyser_df[!,:n] .== key,
+                val,
+                electrolyser_df[!,:n])
+    end
+    
+    return electrolyser_df
+end
+
+function calculate_electrolyser_period_weights(
+    electrolyser_df
+)
+    electrolyser_df[!, "cap_fac_sum"] = 
+        electrolyser_df[!, :DA] .+
+        electrolyser_df[!, :BA_down] .+ 
+        electrolyser_df[!, :BA_up]
+    agg_df = combine(groupby(electrolyser_df, [:scenario, :e]),
+        :cap_fac_sum => sum => :cap_fac_sum_agg)
+    electrolyser_df = 
+        innerjoin(electrolyser_df, agg_df, on = [:scenario, :e])
+    electrolyser_df[!, :weights] = 
+        electrolyser_df[!, :cap_fac_sum] ./
+        electrolyser_df[!, :cap_fac_sum_agg]
+
+    replace!(electrolyser_df.mean_expected_power_price, NaN => 0)
+    replace!(electrolyser_df.weights, NaN => 0)
+    replace!(electrolyser_df.mean_expected_power_price, "NaN" => 0)
+    replace!(electrolyser_df.mean_expected_power_price, 1.0 => 0)
+
+    return electrolyser_df
+end
