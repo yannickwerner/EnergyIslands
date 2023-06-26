@@ -715,7 +715,7 @@ function load_input_data!(ES)
 
     ########## Define Sets ##########
     Sets_df = DataFrame(gettable(
-        openxlsx(path*"sets-v07-al-2022_05_10.xlsx")["sets"])...)
+        openxlsx(path*"sets-v07-al-2022_05_10.xlsx")["sets"]))
     set_countries = filter(!ismissing, Sets_df[!, :n])
     if isnothing(ES.countries)
         ES.countries = set_countries
@@ -737,31 +737,31 @@ function load_input_data!(ES)
     ########## Storage data ##########
     if ES.data_set_capacities == "TYNDP"
         Capacity_df = DataFrame(gettable(
-            openxlsx(path*"inst_cap-v15-yw-2022_06_08.xlsx")["g_max"])...)
+            openxlsx(path*"inst_cap-v15-yw-2022_06_08.xlsx")["g_max"]))
         Storages_df = DataFrame(gettable(
-            openxlsx(path*"storage-v05-yw-2022_04_13.xlsx")["storage"])...)
+            openxlsx(path*"storage-v05-yw-2022_04_13.xlsx")["storage"]))
         Interconnectors_df = DataFrame(gettable(
-            openxlsx(path*"ntc-v18-yw-2022_05_16.xlsx")["ntc"])...)
+            openxlsx(path*"ntc-v18-yw-2022_05_16.xlsx")["ntc"]))
     elseif ES.data_set_capacities == "openENTRANCE"
         filenmame_openentrance = "openentrance-v12-yw-2022_06_08.xlsx"
         Capacity_df = DataFrame(gettable(
             openxlsx(path*filenmame_openentrance)[
-                "dir_trans_inst_cap"])...)
+                "dir_trans_inst_cap"]))
         Storages_df = DataFrame(gettable(
             openxlsx(path*filenmame_openentrance)[
-                "dir_trans_stor"])...)
+                "dir_trans_stor"]))
         Interconnectors_df = DataFrame(gettable(
-            openxlsx(path*"ntc-v18-yw-2022_05_16.xlsx")["ntc"])...)
+            openxlsx(path*"ntc-v18-yw-2022_05_16.xlsx")["ntc"]))
     elseif ES.data_set_capacities == "PAUL"
         filenmame_paul = "paul_case-v01-2022_05_20.xlsx"
         Capacity_df = DataFrame(gettable(
             openxlsx(path*filenmame_paul)[
-                "inst_cap_paul"])...)
+                "inst_cap_paul"]))
         Interconnectors_df = DataFrame(gettable(
             openxlsx(path*filenmame_paul)[
-                "ntc_paul"])...)
+                "ntc_paul"]))
         Storages_df = DataFrame(gettable(
-            openxlsx(path*"storage-v05-yw-2022_04_13.xlsx")["storage"])...)
+            openxlsx(path*"storage-v05-yw-2022_04_13.xlsx")["storage"]))
     else
         throw(ArgumentError("Data set for installed capacities is
             $(ES.data_set_capacities) but must be one of
@@ -769,12 +769,14 @@ function load_input_data!(ES)
     end
 
     ########## Technology parameters ##########
-    xls_tech = openxlsx(path*"technologies-v20-yw-2022_05_12.xlsx")
-    Parameters_i = DataFrame(gettable(xls_tech["i"])...)
-    Parameters_j = DataFrame(gettable(xls_tech["j"])...)
-    Parameters_e = DataFrame(gettable(xls_tech["e"])...)
-    Parameters_s = DataFrame(gettable(xls_tech["s"])...)    
+    xls_tech = openxlsx(path*"technologies-v21-yw-2023_05_09.xlsx")
+    Parameters_i = DataFrame(gettable(xls_tech["i"]))
+    Parameters_j = DataFrame(gettable(xls_tech["j"]))
+    Parameters_e = DataFrame(gettable(xls_tech["e"]))
+    Parameters_s = DataFrame(gettable(xls_tech["s"]))    
     ########## Commodity prices ##########
+    FuelPrice_df = DataFrame(gettable(xls_tech["p_fuel"]))
+    CO2Price_df = DataFrame(gettable(xls_tech["p_co2"]))
     H2Price_df = DataFrame(gettable(xls_tech["p_h2"]))
     ########## Timeseries data ####################
     Demand_EL_ts = CSV.read(joinpath(
@@ -787,11 +789,11 @@ function load_input_data!(ES)
         path, "wind_offshore-v07-yw-2022_05_11_flt.csv"), DataFrame, delim=";")
     ########## Hydro data ##########
     xls_hydro = openxlsx(path*"hydro-v13-yw-2022_04_22.xlsx")
-    Reservoir_ts = DataFrame(gettable(xls_hydro["reservoir"])...)
-    RunOfRiver_ts = DataFrame(gettable(xls_hydro["run_of_river"])...)     
+    Reservoir_ts = DataFrame(gettable(xls_hydro["reservoir"]))
+    RunOfRiver_ts = DataFrame(gettable(xls_hydro["run_of_river"]))     
     ########## Hydrogen demand data ########## 
     Demand_hydrogen_df = DataFrame(gettable(
-        openxlsx(path*"hydrogen-v02-yw-2022_04_25.xlsx")["demand"])...)
+        openxlsx(path*"hydrogen-v02-yw-2022_04_25.xlsx")["demand"]))
     ########## Heat demand data ##########
     min_load_ts_dict = 
         calculate_chp_min_load(copy(ES.countries), 2015, path, ES.T; offset=0.2)
@@ -844,7 +846,7 @@ function load_input_data!(ES)
     end
 
     Maxima_df = DataFrame(gettable(
-        openxlsx(path*"maxima_2022_05_11.xlsx")["maxima"])...)
+        openxlsx(path*"maxima_2022_05_11.xlsx")["maxima"]))
 
     ######################### Create Components #########################
     ############### DispatchableGenerators ###############

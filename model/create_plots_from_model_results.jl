@@ -89,7 +89,7 @@ aggregated_results = openxlsx(path_results*filename_aggregated_results)
 
 model_statistics_df = DataFrame(gettable(
     aggregated_results["model_statistics"],
-    infer_eltypes=true)...)
+    infer_eltypes=true))
 
 ############### Electrolyser plots ###############
 electrolyser_df = 
@@ -100,7 +100,7 @@ electrolyser_df =
 ##### Add electrolyser capacities
 path = "data/29032022/"
 e_df = DataFrame(gettable(
-    openxlsx(path*"inst_cap-v15-yw-2022_06_08.xlsx")["g_max"])...)
+    openxlsx(path*"inst_cap-v15-yw-2022_06_08.xlsx")["g_max"]))
 e_df[!, "name"] = [n*"_"*g for (n,g) in 
     zip(e_df[!, "n"], 
     e_df[!, "g"])]
@@ -281,7 +281,6 @@ df[!, "profit_total"] =
         150 .- df[!, "mc_weighted"]/0.665 .- df[!,"mean_expected_power_price"]/0.665)
 
 ########## Business case manual calculation ##########
-
 using Latexify
 latexify(df; env=:table, latex=false)
 
