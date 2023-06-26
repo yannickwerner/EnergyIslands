@@ -15,74 +15,15 @@ include("plotting.jl")
 include("data.jl")
 
 hub_rename_dict = Dict(
-    "HUB1" => "VindØ",
+    "HUB1" => "DEI",
     "HUB2" => "NSWHP",
     "HUB3" => "Bornholm"
 )
 
-function select_weeks(df, weeks)
-    return df[[w in weeks for w in df[!, "weeks"]], :]
-end
-
-function select_mean(df, by, cols)
-    return combine(groupby(df, by),
-        cols .=> mean .=> cols)
-end
-
-function select_mean_weighted(df, by, cols, weights)
-    return combine(groupby(df, by),
-        cols .=> (c,w) -> mean(c,Weights(w)) .=> cols)
-end
-
-function load_electrolyser_results_df(
-    model_results,
-    hub_rename_dict)
-    electrolyser_df = DataFrame(gettable(
-        model_results["electrolysers"],
-        infer_eltypes=true)...)
-    for var in ["DA", "BA_down", "BA_up"]
-        electrolyser_df[!, var] = Float64.(
-            electrolyser_df[!, var])
-    end
-
-    for (key,val) in hub_rename_dict
-        electrolyser_df[!,:n] = 
-            ifelse.(
-                electrolyser_df[!,:n] .== key,
-                val,
-                electrolyser_df[!,:n])
-    end
-    
-    return electrolyser_df
-end
-
-function calculate_electrolyser_period_weights(
-    electrolyser_df
-)
-    electrolyser_df[!, "cap_fac_sum"] = 
-        electrolyser_df[!, :DA] .+
-        electrolyser_df[!, :BA_down] .+ 
-        electrolyser_df[!, :BA_up]
-    agg_df = combine(groupby(electrolyser_df, [:scenario, :e]),
-        :cap_fac_sum => sum => :cap_fac_sum_agg)
-    electrolyser_df = 
-        innerjoin(electrolyser_df, agg_df, on = [:scenario, :e])
-    electrolyser_df[!, :weights] = 
-        electrolyser_df[!, :cap_fac_sum] ./
-        electrolyser_df[!, :cap_fac_sum_agg]
-
-    replace!(electrolyser_df.mean_expected_power_price, NaN => 0)
-    replace!(electrolyser_df.weights, NaN => 0)
-    replace!(electrolyser_df.mean_expected_power_price, "NaN" => 0)
-    replace!(electrolyser_df.mean_expected_power_price, 1.0 => 0)
-
-    return electrolyser_df
-end
-
-
 path_results = "results/data/"
 
-timestamp = "2022-06-15-00-00"
+# timestamp = "2022-06-15-00-00"
+timestamp = "2023-05-10-00-00"
 filename_aggregated_results = "model_results_"*timestamp*".xlsx"
 
 aggregated_results = openxlsx(path_results*filename_aggregated_results)
@@ -117,52 +58,31 @@ end
 
 electrolyser_df = calculate_electrolyser_period_weights(electrolyser_df);
 
+############## Scenario number comparison ##############
+filename_aggregated_results = "model_results_2023-05-12-00-00_no_scenario_comp.xlsx"
+model_statistics_df = DataFrame(gettable(
+    openxlsx(path_results*filename_aggregated_results)["electrolysers"],
+    infer_eltypes=true))
+df_mean = select_mean(
+    model_statistics_df,
+    [:no_scenarios, :n],
+    [:DA, :BA_down, :BA_up]
+)
+
+flt = [(n in ["HUB1", "HUB3"]) for  n in df_mean[!, :n]]
+df_mean[flt, :]
+
+
 ######## Plotting electrolyser ########
 df = copy(electrolyser_df)
 weeks = unique(df[!, :weeks])
 
+# Add number of uncertainty scenarios to case string 
 df[!,:scenario] = df[!,:scenario] .* "_" .* string.(df[!,:no_scenarios])
 
-flt_bz =
-    occursin.("TYNDP", df[!, "scenario"]) .&
-    occursin.("2030", df[!, "scenario"]) .&
-    (df[!, "ntc_scaling_factor"] .== 1.0)
 
-flt_year = 
-    occursin.("TYNDP", df[!, "scenario"]) .&
-    occursin.("OBZ", df[!, "scenario"]) .&
-    (df[!, "ntc_scaling_factor"] .== 1.0)
-
-flt_data = 
-    occursin.("OBZ", df[!, "scenario"]) .&
-    occursin.("2030", df[!, "scenario"]) .&
-    (df[!, "ntc_scaling_factor"] .== 1.0)
-
-flt_ntc = 
-    occursin.("OBZ", df[!, "scenario"]) .&
-    occursin.("2030", df[!, "scenario"]) .&
-    occursin.("TYNDP", df[!, "scenario"])
-
-configurations = [
-    Dict(
-        "case" => "BZ_comparison",
-        "flt" => flt_bz,
-        "fname" => "BZ_comparison_2030"),
-    Dict(
-        "case" => "year_comparison",
-        "flt" => flt_year,
-        "fname" => "2030_2040_comparison"),
-    Dict(
-        "case" => "dataset_comparison",
-        "flt" => flt_data,
-        "fname" => "TYNDP_oE_comparison"),
-    Dict(
-        "case" => "ntc_comparison",
-        "flt" => flt_ntc,
-        "fname" => "ntc_comparison")
-]
-
-# config = configurations[1]
+configurations = define_filters(df)
+# config = configurations[4]
 
 for config in configurations
 
@@ -180,47 +100,47 @@ for config in configurations
         "results/plots/cap_fac_grp_$(timestamp)_$(config["fname"]).pdf")
 end
 
-# for week in 1:length(weeks)
-#     flt =
-#         occursin.("TYNDP", df[!, "scenario"]) .&
-#         # occursin.("OBZ", df[!, "scenario"])# .&
-#         occursin.("2030", df[!, "scenario"]) .&
-#         (df[!,:weeks] .== weeks[week])
 
-#     f = plot_capacity_factors_grouped_from_dataframe(df[flt,:])
-#     @show f
+# Comparison of different weeks
+# f = compare_weeks(df, weeks, timestamp)
+# @show f
 
-#     f |> FileIO.save(
-#         "results/plots/cap_fac_grp_$(timestamp)_OBZvsHBZ_$(week).pdf")
-# end
+# ########## Calculate electrolyser statistics for selected countries ##########
+# zones = vcat(["DKW1", "DKE1"], values(hub_rename_dict)...)
 
-
-########## Calculate electrolyser statistics for selected countries ##########
-zones = vcat(["DKW1", "DKE1"], values(hub_rename_dict)...)
-flt = [(n in zones) & (y == 2030) & (ntc == 1.0) & (bz .== "OBZ") for (n, y, ntc, bz) in
-    zip(electrolyser_df[!, :n],
+zones = values(hub_rename_dict)
+flt = [(occursin("TYNDP_base", sc)) & (n in zones) & (y == 2030) & (bz .== "OBZ") for (sc, n, y, bz) in
+    zip(electrolyser_df[!, :scenario],
+        electrolyser_df[!, :n],
         electrolyser_df[!, :y],
-        electrolyser_df[!, :ntc_scaling_factor],
+        # electrolyser_df[!, :ntc_scaling_factor],
         electrolyser_df[!, :bz_config])]
+        #flt = [(n in zones) & (y == 2030) & (ntc == 1.0) & (bz .== "OBZ") for (n, y, ntc, bz)
 df = electrolyser_df[flt,:]
 df_mean = select_mean(
     df,
     [:scenario, :n],
     [:DA, :BA_down, :BA_up]
 )
+
 df_mean = leftjoin(df_mean, unique(electrolyser_df[!,[:n, :g_max]]), on=:n)
 df_mean[!, "cap_fac_sum"] = df_mean[!, :DA] .+ df_mean[!, :BA_down] .+ df_mean[!, :BA_up]
 df_mean[!, "prod"] = df_mean[!,"cap_fac_sum"] .* df_mean[!, :g_max] 
 
+df_mean[!, :share_BA] = 
+    (df_mean[!, :BA_down] .- df_mean[!, :BA_up]) ./ df_mean[!, :DA]
 
 ##### Select TYNDP
 electrolyser_df =
-    electrolyser_df[occursin.("TYNDP", electrolyser_df[!, :scenario]), :]
+    electrolyser_df[
+        occursin.("openENTRANCE", electrolyser_df[!, :scenario]) .& #TYNDP
+        occursin.("base", electrolyser_df[!, :scenario]), :]
 
-electrolyser_df[electrolyser_df[!,:scenario] .== "OBZ_2030_TYNDP_TYNDP_1.0", :]
+# electrolyser_df = electrolyser_df[electrolyser_df[!,:scenario] .== "OBZ_2030_TYNDP_TYNDP_base_1.0", :]
 # electrolyser_df = electrolyser_df[electrolyser_df[!,:scenario] .== "OBZ_2030_openENTRANCE_Paris_1.0", :]
 
 zones = vcat(["DKW1", "DKE1"], values(hub_rename_dict)...)
+# zones = unique(electrolyser_df[!,:n])
 flt = [(n in zones) & (y == 2030) & (ntc == 1.0) for (n, y, ntc) in
     zip(electrolyser_df[!, :n], electrolyser_df[!, :y], electrolyser_df[!, :ntc_scaling_factor])]
 # flt = [(y == 2030) for y in electrolyser_df[!, :y]]
@@ -233,8 +153,8 @@ electrolyser_df[!, "prod"] = (electrolyser_df[!, :DA] .+ electrolyser_df[!, :BA_
 
 electrolyser_df[!, "mc"] = 
     (electrolyser_df[!, :DA] * 10.6875 .+
-    electrolyser_df[!, :BA_down] * 10.6875 * 1.2 .-
-    electrolyser_df[!, :BA_up] * 10.6875 * 0.2) ./ 
+    electrolyser_df[!, :BA_down] * 10.6875 * 1.2 .+
+    electrolyser_df[!, :BA_up] * 10.6875 * 0.8) ./ 
     (electrolyser_df[!, :DA] .+ electrolyser_df[!, :BA_down] .+ electrolyser_df[!, :BA_up]) 
 
 electrolyser_df[!, "revenue"] = electrolyser_df[!, "prod"] * 150
@@ -274,7 +194,7 @@ df[!, ["mean_expected_power_price", "profit_total", "prod", "mc_weighted"]] = ro
 df = df[!, 
     ["bz_config", "n", "prod", "mc_weighted", "mean_expected_power_price", "profit_total"]]
 
-df = df[[1,3,2,4], :]
+# df = df[[1,3,2,4], :]
 
 df[!, "profit_total"] = 
     df[!, "prod"] .* (
@@ -307,14 +227,6 @@ res_df[!, "expected_spill"] = res_df[!, "expected_spill"] ./ 1e3
 names(res_df)
 
 
-# agg_df = combine(groupby(res_df, [:scenario, :e]),
-#     :cap_fac_sum => sum => :cap_fac_sum_agg)
-# electrolyser_df = 
-#     innerjoin(electrolyser_df, agg_df, on = [:scenario, :e])
-# electrolyser_df[!, :weights] = 
-#     electrolyser_df[!, :cap_fac_sum] ./
-#     electrolyser_df[!, :cap_fac_sum_agg]
-
 df = combine(groupby(res_df, [:scenario, :j]),
     :bz_config => first => :bz_config,
     :n => first => :n,
@@ -323,56 +235,18 @@ df = combine(groupby(res_df, [:scenario, :j]),
     :expected_profit => sum => :expected_profit,
     :expected_spill => sum => :expected_spill,
 )
-# select!(df, Not([:scenario, :j]))
-
-# electrolyser_df =
-#     electrolyser_df[occursin.("TYNDP", electrolyser_df[!, :scenario]), :]
-
-# df = select_mean(
-#     electrolyser_df,
-#     [:scenario, :e],
-#     [:DA, :BA_down, :BA_up]
-# )
-
-unique(df[!, :weeks])
-
-df = copy(electrolyser_df)
-# copy(select_weeks(electrolyser_df, ["2:2"]))
-
-weeks = unique(df[!, :weeks])
-for week in 1:length(weeks)
-    flt = occursin.("openENTRANCE", df[!, "scenario"]) .&
-        # occursin.("OBZ", df[!, "scenario"])# .&
-        occursin.("2030", df[!, "scenario"]) .&
-        (df[!,:weeks] .== weeks[week])
-
-    f = plot_capacity_factors_grouped_from_dataframe(df[flt,:])
-    @show f
-
-    f |> FileIO.save(
-        "results/plots/capacity_factors_grouped_$(timestamp)_OBZvsHBZ_oE_$(week).pdf")
-end
 
 ############### Timeseries plots ###############
-scenarios = [
-    "OBZ_2030_TYNDP_TYNDP_1.0",
-    "HBZ_2030_TYNDP_TYNDP_1.0",
+s_list = [
+    "OBZ_2030_TYNDP_TYNDP_base_1.0",
+    "HBZ_2030_TYNDP_TYNDP_base_1.0",
     ]
 results_ts_dict = Dict(
     sc => CSV.read(path_results*"output_"*sc*"_"*timestamp*".csv",
-    DataFrame, delim=",") for sc in scenarios
+    DataFrame, delim=",") for sc in s_list
 )
 
-
-sum(ts[!, "price_DA_HUB1"] .* ts[!, "L_HUB1_ptg_offshore"] 
-./ sum(ts[!, "L_HUB1_ptg_offshore"]))
-
-
 ########## Price duration curve ##########
-s_list = [
-    "OBZ_2030_TYNDP_TYNDP_1.0",
-    "HBZ_2030_TYNDP_TYNDP_1.0",
-    ]
 f = plot_price_duration_curve_from_dataframe(
     "HUB1", Dict(s => results_ts_dict[s] for s in s_list))
 f |> FileIO.save(
@@ -383,23 +257,15 @@ f = plot_electrolyser_duration_curve_from_dataframe(
 f |> FileIO.save(
     "results/plots/electrolyser_duration_curve_$timestamp.pdf")
 
-Interconnectors_df = DataFrame(gettable(
-    openxlsx(path*"ntc-v18-yw-2022_05_16.xlsx")["ntc"])...)
 
-I = [
-    # "DKW1_HUB1",
-    "HUB1_DKW1",
-    # "HUB3_DKE1"
-    # "DKE1_HUB3"
-    ]
-s_list = [
-    "OBZ_2030_TYNDP_TYNDP_1.0",
-    "HBZ_2030_TYNDP_TYNDP_1.0"
-    ]
+########## Interconnector flows ##########
+Interconnectors_df = DataFrame(gettable(
+    openxlsx(path*"ntc-v18-yw-2022_05_16.xlsx")["ntc"]))
+
+I = [# "DKW1_HUB1",# "HUB3_DKE1"# "DKE1_HUB3"
+    "HUB1_DKW1"]
 f = plot_interconnector_flow_from_dataframe(
-    I,
-    get_ntcs(I, Interconnectors_df),
-    Dict(s => results_ts_dict[s] for s in s_list))
+    I, get_ntcs(I, Interconnectors_df), Dict(s => results_ts_dict[s] for s in s_list))
 @show f
 f |> FileIO.save(
     "results/plots/interconnector_flow_shore_to_EI_$timestamp.pdf")
@@ -416,6 +282,7 @@ f = plot_price_during_congestion_from_dataframe(
 f |> FileIO.save(
     "results/plots/price_during_congestion_$timestamp.pdf")
 
+########## ##########
 i = "HUB1_DKW1"
 result_dict = Dict(s => results_ts_dict[s] for s in s_list)
 ntc_dict = get_ntcs([i], Interconnectors_df)
@@ -445,15 +312,17 @@ end
 names_df = names(results_ts_dict[collect(keys(results_ts_dict))[1]])
 scenario_res = rsplit(names_df[occursin.(
     "system_balancing_conventionals", names_df)][1], "_")[end]
-#2755 + 72
-k = 2335
+# k = 2335
+j = 241
 f = plot_system_balance_from_dataframe(
     scenario_res,
-    k:k+72,#150:150+96,
-    results_ts_dict["OBZ_2030_TYNDP_TYNDP_1.0"])
+    j:j+72,
+    # k:k+72,
+    results_ts_dict["OBZ_2030_TYNDP_TYNDP_base_1.0"])
 @show f
 f |> FileIO.save(
     "results/plots/system_balance_$timestamp.pdf")
+
 
 node_df = DataFrame(gettable(
     aggregated_results["countries"],
@@ -462,7 +331,7 @@ flt = [(y == 2030) & (occursin("TYNDP", sc) & (bz .== "OBZ"))
     for (y,sc,bz) in zip(node_df[!, :y], node_df[!, :scenario], node_df[!, :bz_config])]
 node_df = node_df[flt, :]
 
-node_df[(node_df[!, :scenario] .== "OBZ_2030_TYNDP_TYNDP_1.0") .&
+node_df[(node_df[!, :scenario] .== "OBZ_2030_TYNDP_TYNDP_base_1.0") .&
     (node_df[!,:n] .=="DKE1") , "mean_power_price_DA"]
 
 #300:400
