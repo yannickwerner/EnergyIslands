@@ -219,14 +219,14 @@ function run_opt_model!(ES; print_model=false)
             L[s,t] - L[s,t-1] + B_L_aux[s,t,ω] - B_L_aux[s,t-1,ω] >= -Storages[s].r_down_L
 
         ##### Storage level constraints #####
-        StorageLevelDA[s in SS, t in T_red],
-            S[s,t] == S[s,t-1] +
-                Storages[s].η_L * L[s,t] - 1/Storages[s].η_G * G[s,t]
-        StorageLevelInitDA[s in SS, t = [T[1]]],
-            S[s,t] == Storages[s].s_init +
-                Storages[s].η_L * L[s,t] - 1/Storages[s].η_G * G[s,t]
-        StorageLevelEndDA[s in SS, t = [T[end]]],
-            S[s,t] >= Storages[s].s_init
+        # StorageLevelDA[s in SS, t in T_red],
+        #     S[s,t] == S[s,t-1] +
+        #         Storages[s].η_L * L[s,t] - 1/Storages[s].η_G * G[s,t]
+        # StorageLevelInitDA[s in SS, t = [T[1]]],
+        #     S[s,t] == Storages[s].s_init +
+        #         Storages[s].η_L * L[s,t] - 1/Storages[s].η_G * G[s,t]
+        # StorageLevelEndDA[s in SS, t = [T[end]]],
+        #     S[s,t] >= Storages[s].s_init
 
         StorageLevelRT[s in SS, t in T_red, ω in Ω],
             S_RT[s,t,ω] == S_RT[s,t-1,ω] +
