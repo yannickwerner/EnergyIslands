@@ -135,6 +135,39 @@ function calculate_descriptive_statistics!(ES)
 
 end
 
+
+function calculate_non_local_renewable_power_consumption_electrolyers(ES, e, ω)
+    """
+    Calculates and returns the non-local renewable power consumption of a given electrolyzer
+    in a given scenario.
+
+    Parameters
+    ----------    
+    ES : EnergySystem
+        Contains information about energy system modeled
+
+    e : str
+        Name of electrolyser
+
+    ω : str
+        Name of scenario
+
+    Returns
+    -------
+    non_local_renewable_power_consumption : Vector{Float64}
+        Non-local renewable power consumption of electrolyzer e in scenario ω
+    """
+    local_renewables = [j for j in ES.J if ES.Renewables[j].node ==  ES.Electrolysers[e].node]
+    local_production_real = reduce(+, [
+        ES.Renewables[j].real[ω] - ES.G_spill[j][ω] for j in local_renewables])
+    non_local_renewable_power_consumption = 
+        ES.L[e] + ES.B_down[e][ω] - ES.B_up[e][ω]  - local_production_real
+    non_local_renewable_power_consumption[non_local_renewable_power_consumption .<= 0] .= 0
+
+    return non_local_renewable_power_consumption
+end
+
+
 function extract_optimal_values(scenarios, countries, ES)
     """
     Extracts specific optimal solutions for certain variables
@@ -204,6 +237,16 @@ function extract_optimal_values(scenarios, countries, ES)
                 ES.Renewables[j].real[ω] .- ES.G[j]
         end
     end
+
+    # Electrolyser electricity imports
+    for e in ES.E
+        nl_power_cons_e_sc = reduce(hcat,
+            calculate_non_local_renewable_power_consumption_electrolyers.(
+                Ref(ES), Ref(e), ES.Ω))
+        nl_power_cons_e = reduce(vcat, mean(nl_power_cons_e_sc, dims=2))
+        df[!, "nl_res_power_cons_avg_$e"] = nl_power_cons_e
+    end
+
 
     # System data
     for ω in scenarios
@@ -352,6 +395,12 @@ function write_descriptive_statistics(ES::EnergySystem, weeks)
     node_df = DataFrame()
 
     for e in ES.E
+
+        nl_power_cons_e_sc = reduce(hcat,
+            calculate_non_local_renewable_power_consumption_electrolyers.(
+                Ref(ES), Ref(e), ES.Ω))
+        nl_power_cons_e = reduce(vcat, mean(nl_power_cons_e_sc, dims=2))
+
         df = DataFrame(
             :scenario => ES.scenario,
             :bz_config => ES.bidding_zone_config,
@@ -371,6 +420,8 @@ function write_descriptive_statistics(ES::EnergySystem, weeks)
             :profit_total => 
                 ES.Electrolysers[e].profit_DA+
                 ES.Electrolysers[e].profit_BA["expected"],
+            :non_local_renewable_electricity_consumption =>
+                sum(nl_power_cons_e)/(ES.Electrolysers[e].l_max * length(ES.T))
         )
 
         df = hcat(df, DataFrame(ES.Electrolysers[e].capacity_factors))
