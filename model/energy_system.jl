@@ -6,7 +6,7 @@ mutable struct EnergySystem
     year_model # Model year (case study year)
     file_name # Name of excel file containing the data
     countries # List of countries to be modeled
-    seed # Random seed for sampling of hydro timeseries data
+    # seed # Random seed for sampling of hydro timeseries data
     hydro_sample_years # collects the randomly sampled years for hydro
     μ # cost margin for bid prices in balancing market
     hydrogen_demand # total hydrogen demand per bidding zone
@@ -20,6 +20,7 @@ mutable struct EnergySystem
     uncertainty_horizon # wind power production forecast horizon
     wind_uncertainty_scaling_factor # factor used to scale wind uncertainty
     co2_price_pathway # determines CO2 prices
+    h2_price_pathway # determines H2 prices
     data_set_capacities # determines which data source to use
     ntc_scaling_factor # determines interconnector capacity between hubs and shore
     total_run_time # measures the total run time of a scenario including model building and solving

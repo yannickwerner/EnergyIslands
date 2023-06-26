@@ -257,6 +257,7 @@ function run_opt_model!(ES; print_model=false)
         :model_year => ES.year_model,
         :data_set_capacities => ES.data_set_capacities,
         :co2_price_pathway => ES.co2_price_pathway,
+        :h2_price_pathway => ES.h2_price_pathway,
         :hours => length(ES.T),
         :ntc_scaling_factor => ES.ntc_scaling_factor,
         :pf_res_year => ES.year_pointforecast,

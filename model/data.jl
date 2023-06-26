@@ -775,8 +775,7 @@ function load_input_data!(ES)
     Parameters_e = DataFrame(gettable(xls_tech["e"])...)
     Parameters_s = DataFrame(gettable(xls_tech["s"])...)    
     ########## Commodity prices ##########
-    FuelPrice_df = DataFrame(gettable(xls_tech["p_fuel"])...)
-    CO2Price_df = DataFrame(gettable(xls_tech["p_co2"])...)
+    H2Price_df = DataFrame(gettable(xls_tech["p_h2"]))
     ########## Timeseries data ####################
     Demand_EL_ts = CSV.read(joinpath(
         path, "load-v12-yw-2022_04_02_flt.csv"), DataFrame, delim=";")
@@ -1083,9 +1082,10 @@ function load_input_data!(ES)
                 [:eta, :l_min_share, :fuel_output, :vom]], 1)
 
         # Costs and prices
-        price_H2 = FuelPrice_df[
-            ((FuelPrice_df[!,:fuel] .== output_fuel) .&
-            (FuelPrice_df[!,:y] .== ES.year_model)), :p_fuel][1]
+        price_H2 = H2Price_df[
+            ((H2Price_df[!,:fuel] .== output_fuel) .&
+            (H2Price_df[!,:y] .== ES.year_model) .&
+            (H2Price_df[!,:pathway] .== ES.h2_price_pathway)), :p_fuel][1]
         mc = cost_vom
 
         p_B_up, p_B_down = mc .* [1-ES.μ, 1+ES.μ] 

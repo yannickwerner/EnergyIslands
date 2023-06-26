@@ -72,24 +72,24 @@ Each scenario is a tuple with five entries containing information on:
 
 global SEED = seed!(12345)
 scenarios = [
-    ("OBZ", 2030, "TYNDP", "TYNDP", 1.0),
-    # ("OBZ", 2030, "openENTRANCE", "Paris", 1.0),
-    # ("OBZ", 2040, "TYNDP", "TYNDP", 1.0),
-    # ("OBZ", 2040, "openENTRANCE", "Paris", 1.0),
-    # ("HBZ", 2030, "TYNDP", "TYNDP", 1.0),
-    # ("HBZ", 2030, "openENTRANCE", "Paris", 1.0),
-    # ("HBZ", 2040, "TYNDP", "TYNDP", 1.0),
-    # ("HBZ", 2040, "openENTRANCE", "Paris", 1.0),
-    # ("OBZ", 2030, "PAUL", "BAU", 1.0),
-    # ("OBZ", 2040, "PAUL", "BAU", 1.0),
-    # ("HBZ", 2030, "PAUL", "BAU", 1.0),
-    # ("HBZ", 2040, "PAUL", "BAU", 1.0),
-    # ("OBZ", 2030, "TYNDP", "TYNDP", 0.6),
-    # ("OBZ", 2040, "TYNDP", "TYNDP", 0.6),
-    # ("OBZ", 2030, "TYNDP", "TYNDP", 0.8),
-    # ("OBZ", 2030, "TYNDP", "TYNDP", 1.2),
-    # ("OBZ", 2040, "TYNDP", "TYNDP", 0.8),
-    # ("OBZ", 2040, "TYNDP", "TYNDP", 1.2),
+    ("OBZ", 2030, "TYNDP", "TYNDP", "base", 1.0),
+    # ("OBZ", 2040, "TYNDP", "TYNDP", "base", 1.0),
+    # ("HBZ", 2030, "TYNDP", "TYNDP", "base", 1.0),
+    # ("HBZ", 2040, "TYNDP", "TYNDP", "base", 1.0),
+    # ("OBZ", 2030, "openENTRANCE", "Paris", "base", 1.0),
+    # ("OBZ", 2040, "openENTRANCE", "Paris", "base", 1.0),
+    #### ("HBZ", 2030, "openENTRANCE", "Paris", "base", 1.0),
+    ##### ("HBZ", 2040, "openENTRANCE", "Paris", "base", 1.0),
+    # ("OBZ", 2030, "TYNDP", "TYNDP", "base", 0.6),
+    # ("OBZ", 2030, "TYNDP", "TYNDP", "base", 0.8),
+    # ("OBZ", 2030, "TYNDP", "TYNDP", "base", 1.2),
+    #### ("OBZ", 2040, "TYNDP", "TYNDP", "base", 0.6),
+    #### ("OBZ", 2040, "TYNDP", "TYNDP", "base", 0.8),
+    #### ("OBZ", 2040, "TYNDP", "TYNDP", "base", 1.2),
+    # ("OBZ", 2030, "TYNDP", "TYNDP", "high", 1.0),
+    # ("OBZ", 2030, "TYNDP", "TYNDP", "low", 1.0),
+    # ("OBZ", 2040, "TYNDP", "TYNDP", "high", 1.0),
+    # ("OBZ", 2040, "TYNDP", "TYNDP", "low", 1.0),
     ]
 
 results = Dict()
@@ -115,7 +115,8 @@ for sc in scenarios
     config_dict[:year_model] = sc[2]
     config_dict[:data_set_capacities] = sc[3]
     config_dict[:co2_price_pathway] = sc[4]
-    config_dict[:ntc_scaling_factor] = sc[5]
+    config_dict[:h2_price_pathway] = sc[5]
+    config_dict[:ntc_scaling_factor] = sc[6]
 
     global optimal_values_ts_df = DataFrame()
     for weeks in week_list    
@@ -154,7 +155,7 @@ for sc in scenarios
     end
     CSV.write(
         "results/data/output_$(
-            join(sc[1:5], "_"))_$timestamp.csv",
+            join(sc[1:6], "_"))_$timestamp.csv",
         optimal_values_ts_df)
 end
 
@@ -166,5 +167,3 @@ writetable(
     "countries" => node_df,
     "scenario_obj_vals" => scenario_obj_val_df
     )
-
-
