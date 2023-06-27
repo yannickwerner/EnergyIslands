@@ -345,34 +345,34 @@ f |> FileIO.save(
     "results/plots/pv_gen.pdf")
 
 
-############ Number scenarios evaluation ############
-sc_obj_val_df = DataFrame(gettable(
-    aggregated_results["scenario_obj_vals"],
-    infer_eltypes=true)...)
+# ############ Number scenarios evaluation ############
+# sc_obj_val_df = DataFrame(gettable(
+#     aggregated_results["scenario_obj_vals"],
+#     infer_eltypes=true)...)
 
-sc_obj_val_df[!, :scenario] = 
-    sc_obj_val_df[!, :scenario] .* "_" .* 
-    string.(sc_obj_val_df[!, :no_scnearios])
+# sc_obj_val_df[!, :scenario] = 
+#     sc_obj_val_df[!, :scenario] .* "_" .* 
+#     string.(sc_obj_val_df[!, :no_scnearios])
 
-cols = vcat("scenario", "weeks", "s" .* string.(collect(1:10)))
-sc_obj_val_df[!,cols]
+# cols = vcat("scenario", "weeks", "s" .* string.(collect(1:10)))
+# sc_obj_val_df[!,cols]
 
-using KernelDensity, Random, Statistics
+# using KernelDensity, Random, Statistics
 
-f = plot()
-week = "3:6"
-for sc in unique(sc_obj_val_df[!, :scenario])
+# f = plot()
+# week = "3:6"
+# for sc in unique(sc_obj_val_df[!, :scenario])
     
-    x = convert(Array{Float64,1}, 
-    collect(sc_obj_val_df[
-        (sc_obj_val_df[!, :scenario] .== sc) .&
-        (sc_obj_val_df[!, :weeks] .== week), cols[3:end]][1,:]))
-    println("sc: $sc", " mean: $(mean(x))", " var: $(std(x))")
-    y = kde(x)
-    plot!(f, 
-        # range(minimum(x),step=10000,stop=maximum(x)),
-        range(4.90e9, step=100000, stop=5.35e9),
-        z->pdf(y, z),
-        label=sc)
-end
-@show f
+#     x = convert(Array{Float64,1}, 
+#     collect(sc_obj_val_df[
+#         (sc_obj_val_df[!, :scenario] .== sc) .&
+#         (sc_obj_val_df[!, :weeks] .== week), cols[3:end]][1,:]))
+#     println("sc: $sc", " mean: $(mean(x))", " var: $(std(x))")
+#     y = kde(x)
+#     plot!(f, 
+#         # range(minimum(x),step=10000,stop=maximum(x)),
+#         range(4.90e9, step=100000, stop=5.35e9),
+#         z->pdf(y, z),
+#         label=sc)
+# end
+# @show f
