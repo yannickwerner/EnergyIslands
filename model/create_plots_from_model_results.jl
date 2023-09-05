@@ -14,10 +14,31 @@ using StatsBase: mean, Weights
 include("plotting.jl")
 include("data.jl")
 
-hub_rename_dict = Dict(
+# bz_rename_dict = Dict(
+#     "HUB1" => "DEI",
+#     "HUB2" => "NSWHP",
+#     "HUB3" => "Bornholm"
+# )
+
+bz_rename_dict = Dict(
     "HUB1" => "DEI",
     "HUB2" => "NSWHP",
-    "HUB3" => "Bornholm"
+    "HUB3" => "Bornholm",
+    "DKW1" => "DK1",
+    "DKE1" => "DK2",
+    "NL00" => "NL",
+    "DELU" => "DE",
+    "BE00" => "BE",
+    "UK00" => "UK",
+    "PL00" => "PL",
+    "SE01" => "SE1",
+    "SE02" => "SE2",
+    "SE03" => "SE3",
+    "SE04" => "SE4",
+    "NON1" => "NON",
+    "NOS0" => "NOS",
+    "NOM1" => "NOM",
+    "FR00" => "FR"
 )
 
 path_results = "results/data/"
@@ -36,7 +57,7 @@ model_statistics_df = DataFrame(gettable(
 electrolyser_df = 
     load_electrolyser_results_df(
         aggregated_results,
-        hub_rename_dict)
+        bz_rename_dict)
 
 ##### Add electrolyser capacities
 path = "data/29032022/"
@@ -106,9 +127,9 @@ end
 # @show f
 
 # ########## Calculate electrolyser statistics for selected countries ##########
-# zones = vcat(["DKW1", "DKE1"], values(hub_rename_dict)...)
+# zones = vcat(["DKW1", "DKE1"], values(bz_rename_dict)...)
 
-zones = values(hub_rename_dict)
+zones = values(bz_rename_dict)
 flt = [(occursin("TYNDP_base", sc)) & (n in zones) & (y == 2030) & (bz .== "OBZ") for (sc, n, y, bz) in
     zip(electrolyser_df[!, :scenario],
         electrolyser_df[!, :n],
@@ -139,7 +160,7 @@ electrolyser_df =
 # electrolyser_df = electrolyser_df[electrolyser_df[!,:scenario] .== "OBZ_2030_TYNDP_TYNDP_base_1.0", :]
 # electrolyser_df = electrolyser_df[electrolyser_df[!,:scenario] .== "OBZ_2030_openENTRANCE_Paris_1.0", :]
 
-zones = vcat(["DKW1", "DKE1"], values(hub_rename_dict)...)
+zones = vcat(["DKW1", "DKE1"], values(bz_rename_dict)...)
 # zones = unique(electrolyser_df[!,:n])
 flt = [(n in zones) & (y == 2030) & (ntc == 1.0) for (n, y, ntc) in
     zip(electrolyser_df[!, :n], electrolyser_df[!, :y], electrolyser_df[!, :ntc_scaling_factor])]
@@ -166,7 +187,7 @@ electrolyser_df[!, "profit_total"] =
 electrolyser_df[!, "relative_profit"] = 
     electrolyser_df[!, :profit_total] ./ electrolyser_df[!, :g_max]
 
-flt = [(n in values(hub_rename_dict)) & (y == 2030) for (n, y) in
+flt = [(n in values(bz_rename_dict)) & (y == 2030) for (n, y) in
     zip(electrolyser_df[!, :n], electrolyser_df[!, :y])]
 
 df = electrolyser_df[flt, 

@@ -490,11 +490,11 @@ end
 function plot_price_during_congestion_from_dataframe(
     i, year, result_dict, ntc_dict; T=nothing)
 
-    hub_rename_dict = Dict(
-        "HUB1" => "DEI",
-        "HUB2" => "NSWHP",
-        "HUB3" => "Bornholm"
-    )
+    # bz_rename_dict = Dict(
+    #     "HUB1" => "DEI",
+    #     "HUB2" => "NSWHP",
+    #     "HUB3" => "Bornholm"
+    # )
 
     fz=14
     f = plot(    
@@ -527,8 +527,8 @@ function plot_price_during_congestion_from_dataframe(
                 continue
             end
 
-            label = c in keys(hub_rename_dict) ?
-                hub_rename_dict[c]*" "*rsplit(sc,"_")[1] :
+            label = c in keys(bz_rename_dict) ?
+                bz_rename_dict[c]*" "*rsplit(sc,"_")[1] :
                 c*" "*rsplit(sc,"_")[1]
 
             plot!(
