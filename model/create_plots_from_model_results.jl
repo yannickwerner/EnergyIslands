@@ -234,28 +234,26 @@ sum(electrolyser_df[electrolyser_df[!,:bz_config] .== "HBZ", "prod"]))
 # electrolyser_df[electrolyser_df[!, "scenario"] .== "OBZ_2030_TYNDP", :]
 
 ##### WindFarms
-zones = ["HUB1", "HUB3"]#, "DKW1", "DKE1"]
-res_df = DataFrame(gettable(
-    aggregated_results["renewables"],
-    infer_eltypes=true)...)
-flt = [(n in zones) & (y == 2030) & occursin("TYNDP", sc) & (ntc == 1.0)
-    for (n, y, sc, ntc) in
-    zip(res_df[!, :n], res_df[!, :y], res_df[!, :scenario], res_df[!, :ntc_scaling_factor])]
-res_df = res_df[flt,:]
-res_df[!, "expected_profit"] = res_df[!, "expected_profit"] ./ 1e6
-res_df[!, "expected_spill"] = res_df[!, "expected_spill"] ./ 1e3
-
-names(res_df)
+# zones = ["HUB1", "HUB3"]#, "DKW1", "DKE1"]
+# res_df = DataFrame(gettable(
+#     aggregated_results["renewables"],
+#     infer_eltypes=true))
+# flt = [(n in zones) & (y == 2030) & occursin("TYNDP", sc) & (ntc == 1.0)
+#     for (n, y, sc, ntc) in
+#     zip(res_df[!, :n], res_df[!, :y], res_df[!, :scenario], res_df[!, :ntc_scaling_factor])]
+# res_df = res_df[flt,:]
+# res_df[!, "expected_profit"] = res_df[!, "expected_profit"] ./ 1e6
+# res_df[!, "expected_spill"] = res_df[!, "expected_spill"] ./ 1e3
 
 
-df = combine(groupby(res_df, [:scenario, :j]),
-    :bz_config => first => :bz_config,
-    :n => first => :n,
-    ["mean_expected_power_price", "weights"] => 
-        ((p,w) -> mean(p, Weights(w))) => "mean_expected_power_price",
-    :expected_profit => sum => :expected_profit,
-    :expected_spill => sum => :expected_spill,
-)
+# df = combine(groupby(res_df, [:scenario, :j]),
+#     :bz_config => first => :bz_config,
+#     :n => first => :n,
+#     ["mean_expected_power_price", "weights"] => 
+#         ((p,w) -> mean(p, Weights(w))) => "mean_expected_power_price",
+#     :expected_profit => sum => :expected_profit,
+#     :expected_spill => sum => :expected_spill,
+# )
 
 ############### Timeseries plots ###############
 s_list = [
@@ -347,7 +345,7 @@ f |> FileIO.save(
 
 node_df = DataFrame(gettable(
     aggregated_results["countries"],
-    infer_eltypes=true)...)
+    infer_eltypes=true))
 flt = [(y == 2030) & (occursin("TYNDP", sc) & (bz .== "OBZ")) 
     for (y,sc,bz) in zip(node_df[!, :y], node_df[!, :scenario], node_df[!, :bz_config])]
 node_df = node_df[flt, :]
@@ -355,15 +353,15 @@ node_df = node_df[flt, :]
 node_df[(node_df[!, :scenario] .== "OBZ_2030_TYNDP_TYNDP_base_1.0") .&
     (node_df[!,:n] .=="DKE1") , "mean_power_price_DA"]
 
-#300:400
-f = plot_RES_generation("DELU_onshore_wind", 310:382, ES.Ω, ES)
-f |> FileIO.save(
-    "results/plots/wind_gen.pdf")
+# #300:400
+# f = plot_RES_generation("DELU_onshore_wind", 310:382, ES.Ω, ES)
+# f |> FileIO.save(
+#     "results/plots/wind_gen.pdf")
 
-#4058:4102
-f = plot_RES_generation("DELU_solarpv", 4008:4080, ES.Ω, ES)
-f |> FileIO.save(
-    "results/plots/pv_gen.pdf")
+# #4058:4102
+# f = plot_RES_generation("DELU_solarpv", 4008:4080, ES.Ω, ES)
+# f |> FileIO.save(
+#     "results/plots/pv_gen.pdf")
 
 
 # ############ Number scenarios evaluation ############
